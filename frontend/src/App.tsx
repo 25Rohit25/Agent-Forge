@@ -1,122 +1,219 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import { Navbar } from './components/Navigation/Navbar';
+import { Sidebar } from './components/Navigation/Sidebar';
+import { ChatBox } from './components/Chat/ChatBox';
+import { WorkflowVisualizer } from './components/Workflow/WorkflowVisualizer';
+import { ToolExecutionDrawer } from './components/Workflow/ToolExecutionDrawer';
+import { ScenarioModal } from './components/Modals/ScenarioModal';
+import { HealthDashboard } from './pages/HealthDashboard';
+import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
+import { ToolHistoryPage } from './pages/ToolHistoryPage';
+import { MetricsPage } from './pages/MetricsPage';
+import { api } from './services/api';
+import { Conversation, Message, SystemOverview, ToolCallInfo } from './types';
 
-function App() {
-  const [count, setCount] = useState(0)
+export function App() {
+  const [activeTab, setActiveTab] = useState<string>('workspace');
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConvId, setCurrentConvId] = useState<string | undefined>(undefined);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [toolExecutions, setToolExecutions] = useState<ToolCallInfo[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [overview, setOverview] = useState<SystemOverview | null>(null);
+  const [inspectedTool, setInspectedTool] = useState<ToolCallInfo | null>(null);
+  const [isScenarioModalOpen, setIsScenarioModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      const [convs, health] = await Promise.all([
+        api.getConversations().catch(() => []),
+        api.getServicesHealth().catch(() => null),
+      ]);
+      setConversations(convs);
+      setOverview(health);
+    } catch (e) {
+      console.error('Error loading initial data:', e);
+    }
+  };
+
+  const refreshHealth = async () => {
+    try {
+      const health = await api.getServicesHealth();
+      setOverview(health);
+    } catch (e) {
+      console.error('Failed to refresh health:', e);
+    }
+  };
+
+  const handleSelectConversation = async (id: string) => {
+    setCurrentConvId(id);
+    try {
+      const conv = await api.getConversation(id);
+      if (conv) {
+        setMessages(conv.messages || []);
+        // Extract tool calls from last assistant message if available
+        const lastAsst = conv.messages?.slice().reverse().find((m) => m.role === 'ASSISTANT');
+        if (lastAsst && lastAsst.tool_calls) {
+          setToolExecutions(lastAsst.tool_calls);
+        } else {
+          setToolExecutions([]);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load conversation:', e);
+    }
+  };
+
+  const handleNewConversation = () => {
+    setCurrentConvId(undefined);
+    setMessages([]);
+    setToolExecutions([]);
+    setActiveTab('workspace');
+  };
+
+  const handleDeleteConversation = async (id: string) => {
+    try {
+      await api.deleteConversation(id);
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      if (currentConvId === id) {
+        handleNewConversation();
+      }
+    } catch (e) {
+      console.error('Failed to delete conversation:', e);
+    }
+  };
+
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: `msg_${Date.now()}`,
+      role: 'USER',
+      content: text,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+    setToolExecutions([]);
+
+    try {
+      const resp = await api.sendMessage(text, currentConvId);
+      setCurrentConvId(resp.conversation_id);
+
+      const assistantMessage: Message = {
+        id: `asst_${Date.now()}`,
+        role: 'ASSISTANT',
+        content: resp.response,
+        tool_calls: resp.tool_executions || [],
+        created_at: resp.created_at || new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      setToolExecutions(resp.tool_executions || []);
+
+      // Refresh conversations list and telemetry
+      const updatedConvs = await api.getConversations();
+      setConversations(updatedConvs);
+      refreshHealth();
+    } catch (err: any) {
+      console.error('Error in agent execution:', err);
+      const errorMessage: Message = {
+        id: `err_${Date.now()}`,
+        role: 'ASSISTANT',
+        content: `### Execution Error\n\nFailed to complete agent workflow: ${err.message || 'Unknown network error'}. Please verify backend is running.`,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLaunchInvestigation = (serviceName: string) => {
+    const prompt = `Investigate why ${serviceName} is degraded, check logs for errors, search our runbooks, and file a GitHub issue if error rate exceeds 5%.`;
+    setActiveTab('workspace');
+    handleSendMessage(prompt);
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-screen bg-slate-50 flex flex-col antialiased">
+      {/* Top Navbar */}
+      <Navbar
+        overview={overview}
+        onRefreshHealth={refreshHealth}
+        onOpenScenarioModal={() => setIsScenarioModalOpen(true)}
+        activeTab={activeTab}
+      />
 
-      <div className="ticks"></div>
+      {/* Main Workspace Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          conversations={conversations}
+          activeConversationId={currentConvId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+          onDeleteConversation={handleDeleteConversation}
+        />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* Center Active Workspace / Dashboard Tab */}
+        {activeTab === 'workspace' && (
+          <main className="flex-1 flex overflow-hidden">
+            <ChatBox
+              messages={messages}
+              isLoading={isLoading}
+              onSendMessage={handleSendMessage}
+              onInspectTool={(tool) => setInspectedTool(tool)}
+            />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+            {/* Right Workflow Stepper */}
+            <WorkflowVisualizer
+              toolExecutions={toolExecutions}
+              isRunning={isLoading}
+              onInspectTool={(tool) => setInspectedTool(tool)}
+            />
+          </main>
+        )}
+
+        {activeTab === 'health' && (
+          <HealthDashboard
+            overview={overview}
+            onRefresh={refreshHealth}
+            onLaunchInvestigation={handleLaunchInvestigation}
+          />
+        )}
+
+        {activeTab === 'knowledge' && <KnowledgeBasePage />}
+
+        {activeTab === 'tools' && <ToolHistoryPage />}
+
+        {activeTab === 'metrics' && <MetricsPage />}
+      </div>
+
+      {/* Tool Execution Drawer */}
+      <ToolExecutionDrawer
+        toolCall={inspectedTool}
+        onClose={() => setInspectedTool(null)}
+      />
+
+      {/* Scenario Launch Modal */}
+      <ScenarioModal
+        isOpen={isScenarioModalOpen}
+        onClose={() => setIsScenarioModalOpen(false)}
+        onSelectScenario={(prompt) => {
+          setActiveTab('workspace');
+          handleSendMessage(prompt);
+        }}
+      />
+    </div>
+  );
 }
 
-export default App
+export default App;
