@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -22,7 +22,7 @@ class ChatResponse(BaseModel):
     steps_count: int = 0
     tools_used: List[str] = []
     tool_executions: List[ToolCallInfo] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class StreamEvent(BaseModel):
     event: str  # start, plan, tool_call, tool_result, analysis, final_response, done, error

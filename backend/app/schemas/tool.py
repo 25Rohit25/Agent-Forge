@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class ToolParameterProperty(BaseModel):
     type: str
@@ -28,8 +28,7 @@ class ToolExecutionResponse(BaseModel):
     execution_time_ms: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ToolCallRequest(BaseModel):
     tool_name: str

@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 class DocumentCreate(BaseModel):
     title: str
@@ -15,8 +15,7 @@ class DocumentChunkResponse(BaseModel):
     content: str
     metadata_info: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DocumentResponse(BaseModel):
     id: str
@@ -27,8 +26,7 @@ class DocumentResponse(BaseModel):
     chunks_count: Optional[int] = 0
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SearchQuery(BaseModel):
     query: str = Field(..., min_length=1)

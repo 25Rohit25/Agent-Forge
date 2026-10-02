@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any, List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from backend.app.schemas.chat import ToolCallInfo
 
 class WorkflowResponse(BaseModel):
@@ -12,8 +12,7 @@ class WorkflowResponse(BaseModel):
     started_at: datetime
     completed_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class WorkflowDetailResponse(WorkflowResponse):
     tool_executions: List[ToolCallInfo] = []
