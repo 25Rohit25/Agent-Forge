@@ -114,14 +114,23 @@ APPROVED_QUERIES = {
 }
 
 def query_database(
-    query_type: str,
+    query_type: str = "failed_transactions",
     service: Optional[str] = None,
-    limit: int = 10
+    limit: int = 10,
+    query: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Execute an approved, read-only operational database query.
     Arbitrary SQL execution is strictly forbidden for security.
     """
+    if query:
+        # Arbitrary SQL guardrail check
+        return {
+            "error": f"Direct arbitrary SQL execution is strictly forbidden by AgentForge guardrails. Query '{query}' was safely blocked.",
+            "approved_query_types": list(APPROVED_QUERIES.keys()),
+            "status": "BLOCKED"
+        }
+
     clean_type = query_type.strip().lower()
 
     if clean_type not in APPROVED_QUERIES:

@@ -6,6 +6,7 @@ from backend.app.tools.log_tool import search_logs
 from backend.app.tools.database_tool import query_database
 from backend.app.tools.github_tool import create_github_issue
 from backend.app.tools.slack_tool import send_slack_message
+from backend.app.tools.knowledge_tool import search_knowledge_base
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +165,7 @@ TOOL_DEFINITIONS: List[Dict[str, Any]] = [
 _TOOL_HANDLERS: Dict[str, Callable[..., Any]] = {
     "get_service_health": get_service_health,
     "search_logs": search_logs,
+    "search_knowledge_base": search_knowledge_base,
     "query_database": query_database,
     "create_github_issue": create_github_issue,
     "send_slack_message": send_slack_message,
