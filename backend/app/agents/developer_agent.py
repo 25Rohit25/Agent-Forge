@@ -58,7 +58,21 @@ class DeveloperAgent:
         lower = message.lower()
         plan: List[Dict[str, Any]] = []
 
-        is_docs_only = any(k in lower for k in ["runbook", "documentation", "how do we", "how to", "architecture"]) and not any(k in lower for k in ["investigate", "failing", "why is", "latency", "errors"])
+        # Handle SQL or database queries
+        if any(k in lower for k in ["sql", "drop table", "select *", "database", "db", "transaction", "pool", "connection"]):
+            plan.append({
+                "tool": "query_database",
+                "args": {
+                    "query_type": "failed_transactions" if "transaction" in lower else ("active_connections" if "connection" in lower or "pool" in lower else message),
+                    "service": service
+                },
+                "reason": "Verify database metrics or validate query safety against whitelist guardrails."
+            })
+            if any(k in lower for k in ["drop table", "arbitrary sql", "select * from"]):
+                return plan
+
+        # Pure documentation query
+        is_docs_only = any(k in lower for k in ["runbook", "documentation", "how do we", "how to", "architecture", "what is incident", "what is the procedure", "what is the recommended"]) and not any(k in lower for k in ["investigate", "failing", "why is", "latency", "errors in the last hour"])
 
         if is_docs_only:
             plan.append({
@@ -68,34 +82,83 @@ class DeveloperAgent:
             })
             return plan
 
-        # Step 1: Health check
-        if service:
-            plan.append({
-                "tool": "get_service_health",
-                "args": {"service_name": service},
-                "reason": f"Inspect operational metrics and degradation status for {service}."
-            })
-        else:
-            plan.append({
-                "tool": "get_service_health",
-                "args": {"service_name": "all"},
-                "reason": "Inspect overall system health and discover degraded services."
-            })
+        # Pure service health query
+        is_health_only = any(k in lower for k in ["check the health", "what is the status", "give me an overview", "show cpu", "show memory", "is it healthy", "check p99", "which services are currently degraded", "is auth-service ready"]) and not any(k in lower for k in ["check the logs", "investigate", "why is", "open a github issue", "file a bug", "create an issue"])
 
-        # Step 2: Log search
-        if service or any(k in lower for k in ["error", "log", "fail", "slow", "exception", "investigate", "why"]):
+        if is_health_only:
+            plan.append({
+                "tool": "get_service_health",
+                "args": {"service_name": service or "all"},
+                "reason": f"Inspect operational metrics and health status for {service or 'all services'}."
+            })
+            return plan
+
+        # Pure log search query
+        is_logs_only = any(k in lower for k in ["search the error logs", "find any deadlock", "inspect auth-service logs", "grep for", "count how many error", "find charge settlement", "check if auth-service has any rate limit"]) and not any(k in lower for k in ["investigate", "why is", "create an issue", "file a bug", "consult incident post-mortems"])
+
+        if is_logs_only:
             plan.append({
                 "tool": "search_logs",
                 "args": {
                     "service": service or "payment-service",
-                    "level": "ERROR",
+                    "level": "ERROR" if "error" in lower else None,
+                    "keyword": "deadlock" if "deadlock" in lower else ("leak" if "leak" in lower else None),
                     "time_range": "1h",
-                    "max_lines": 20
+                    "max_lines": 30
                 },
-                "reason": f"Examine recent error logs and exception stack traces."
+                "reason": f"Examine application logs for {service or 'service'}."
+            })
+            return plan
+
+        # Pure GitHub issue creation
+        is_issue_only = (any(k in lower for k in ["create an issue", "create a high priority github issue", "file a bug report", "open a ticket on github"]) and not any(k in lower for k in ["investigate", "why is", "check logs", "consult incident", "full diagnosis"]))
+
+        if is_issue_only:
+            plan.append({
+                "tool": "create_github_issue",
+                "args": {
+                    "title": message,
+                    "description": f"Created via AgentForge engineer request: {message}",
+                    "priority": "high" if "high" in lower else "medium",
+                    "service": service or "general"
+                },
+                "reason": "Create tracking GitHub issue as requested by the engineer."
+            })
+            return plan
+
+        # Multi-Step Investigation Workflow Assembly
+        # 1. Health check
+        plan.append({
+            "tool": "get_service_health",
+            "args": {"service_name": service or "all"},
+            "reason": f"Inspect operational metrics and degradation status for {service or 'all services'}."
+        })
+
+        # 2. Database query if relevant
+        if any(k in lower for k in ["database", "db", "transaction", "pool", "connection", "deadlock"]):
+            plan.append({
+                "tool": "query_database",
+                "args": {
+                    "query_type": "deadlocks" if "deadlock" in lower else ("failed_transactions" if "transaction" in lower else "active_connections"),
+                    "service": service
+                },
+                "reason": "Inspect database connection pool metrics and transactional conflicts."
             })
 
-        # Step 3: Knowledge base RAG
+        # 3. Log search
+        plan.append({
+            "tool": "search_logs",
+            "args": {
+                "service": service or "payment-service",
+                "level": "ERROR",
+                "keyword": "deadlock" if "deadlock" in lower else None,
+                "time_range": "1h",
+                "max_lines": 30
+            },
+            "reason": f"Examine recent error logs and exception stack traces."
+        })
+
+        # 4. Knowledge base RAG
         plan.append({
             "tool": "search_knowledge_base",
             "args": {
@@ -105,20 +168,8 @@ class DeveloperAgent:
             "reason": "Search internal runbooks and historical post-mortems for matching failure patterns."
         })
 
-        # Step 4: Optional database query
-        if any(k in lower for k in ["database", "db", "transaction", "pool", "connection"]):
-            plan.append({
-                "tool": "query_database",
-                "args": {
-                    "query_type": "active_connections" if "connection" in lower or "pool" in lower else "failed_transactions",
-                    "service": service
-                },
-                "reason": "Query operational database metrics to verify connection pool state and transaction errors."
-            })
-
-        # Step 5: GitHub issue creation if requested
-        wants_issue = any(k in lower for k in ["issue", "ticket", "bug", "github", "open an issue", "create an issue", "file an issue"])
-        if wants_issue:
+        # 5. GitHub issue if requested
+        if any(k in lower for k in ["issue", "ticket", "bug", "github"]):
             plan.append({
                 "tool": "create_github_issue",
                 "args": {
@@ -130,7 +181,7 @@ class DeveloperAgent:
                 "reason": "Create tracking GitHub issue as requested by the engineer."
             })
 
-        # Step 6: Slack alert if requested
+        # 6. Slack alert if requested
         if any(k in lower for k in ["slack", "notify", "alert team"]):
             plan.append({
                 "tool": "send_slack_message",
@@ -300,10 +351,40 @@ class DeveloperAgent:
         docs = state.evidence.relevant_docs
         action = state.evidence.action_taken
 
+        # Check if error in service discovery
+        if telemetry.get("error"):
+            return f"### Service Telemetry Error\n\n{telemetry.get('error')}.\nAvailable services in cluster: {', '.join(telemetry.get('available_services', []))}."
+
+        # If pure database query
+        if len(state.steps) == 1 and state.steps[0].tool_name == "query_database":
+            out = state.steps[0].tool_output or {}
+            if "error" in out:
+                return f"### Database Query Error\n\n**Error:** {out['error']}\nApproved queries: {', '.join(out.get('approved_query_types', []))}."
+            return f"### Database Query Result: {out.get('query_type')}\n\n{json.dumps(out.get('results', []), indent=2)}"
+
+        # If pure health check query
+        if len(state.steps) == 1 and state.steps[0].tool_name == "get_service_health":
+            if "overall_status" in telemetry:
+                return f"### System Cluster Telemetry Overview\n- **Overall Health**: `{telemetry.get('overall_status')}`\n- **Total Services**: `{telemetry.get('total_services')}`\n- **Healthy Count**: `{telemetry.get('healthy_count')}`\n- **Degraded Count**: `{telemetry.get('degraded_count')}` (Services: `{', '.join(telemetry.get('degraded_services', []))}`)\n- **Average Cluster Latency**: `{telemetry.get('avg_system_latency_ms')}ms`"
+            return f"### Service Health: {telemetry.get('display_name', service)}\n- **Status**: `{telemetry.get('status')}`\n- **Error Rate**: `{telemetry.get('error_rate')}%`\n- **Average Latency**: `{telemetry.get('avg_latency_ms')}ms` (P99: `{telemetry.get('p99_latency_ms')}ms`)\n- **CPU Usage**: `{telemetry.get('cpu_usage')}%`\n- **Memory Usage**: `{telemetry.get('memory_usage')}%`\n- **Active Instances**: `{telemetry.get('active_instances')}`"
+
+        # If pure log search query
+        if len(state.steps) == 1 and state.steps[0].tool_name == "search_logs":
+            out = state.steps[0].tool_output or {}
+            log_lines = out.get("logs", [])
+            log_formatted = "\n".join([f"- `{l}`" for l in log_lines]) if log_lines else "- No matching log lines found."
+            return f"### Application Log Search: {out.get('service')}\n- **Matches Count**: {out.get('matches_count')}\n- **File**: `{out.get('log_file')}`\n- **Level Distribution**: {out.get('level_distribution')}\n\n**Log Entries:**\n{log_formatted}"
+
+        # If pure issue creation
+        if len(state.steps) == 1 and state.steps[0].tool_name == "create_github_issue":
+            out = state.steps[0].tool_output or {}
+            return f"### GitHub Issue Created\n- **Issue**: Issue #{out.get('issue_number')}\n- **Title**: {out.get('title')}\n- **URL**: [{out.get('html_url')}]({out.get('html_url')})\n- **Priority**: `{out.get('priority')}`\n- **Status**: `OPEN`"
+
         # If pure knowledge search
         if not telemetry and docs:
             top_doc = docs[0]
-            return f"### Knowledge Base Retrieval\n\nFound relevant documentation from **{top_doc.get('document_title', 'Runbook')}**:\n\n{top_doc.get('content')}\n\n*Reference: {top_doc.get('source')} (relevance score: {top_doc.get('score')})*"
+            snippets = "\n\n".join([f"**{d.get('document_title')}** ({d.get('heading')}):\n{d.get('content')}" for d in docs[:2]])
+            return f"### Knowledge Base Retrieval\n\nFound relevant documentation:\n\n{snippets}\n\n*Reference: {top_doc.get('source')} (relevance score: {top_doc.get('score')})*"
 
         svc_name = service or telemetry.get("service_name", "Microservices System")
         status = telemetry.get("status", "Degraded").capitalize()

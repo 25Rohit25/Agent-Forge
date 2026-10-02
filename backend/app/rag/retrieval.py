@@ -22,7 +22,7 @@ def get_indexed_chunks_count() -> int:
 def search_knowledge(
     query: str,
     limit: int = 4,
-    score_threshold: float = 0.20
+    score_threshold: float = 0.05
 ) -> Dict[str, Any]:
     """
     Execute semantic similarity search across knowledge base chunks.
@@ -44,19 +44,19 @@ def search_knowledge(
         if not chunk_vec:
             continue
         sim = cosine_similarity(query_vec, chunk_vec)
-        if sim >= score_threshold:
-            scored_results.append({
-                "document_title": item.get("document_title", "Technical Runbook"),
-                "source": item.get("source", "knowledge-base"),
-                "heading": item.get("heading", ""),
-                "chunk_index": item.get("chunk_index", 0),
-                "score": round(sim, 4),
-                "content": item.get("content", "")
-            })
+        scored_results.append({
+            "document_title": item.get("document_title", "Technical Runbook"),
+            "source": item.get("source", "knowledge-base"),
+            "heading": item.get("heading", ""),
+            "chunk_index": item.get("chunk_index", 0),
+            "score": round(sim, 4),
+            "content": item.get("content", "")
+        })
 
     # Sort by similarity score descending
     scored_results.sort(key=lambda x: x["score"], reverse=True)
-    top_matches = scored_results[:limit]
+    filtered = [r for r in scored_results if r["score"] >= score_threshold]
+    top_matches = filtered[:limit] if filtered else scored_results[:limit]
 
     return {
         "query": query,

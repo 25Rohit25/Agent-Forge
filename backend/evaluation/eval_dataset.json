@@ -1,0 +1,446 @@
+{
+  "benchmark_name": "AgentForge Developer Agent Benchmark v1.0",
+  "total_cases": 55,
+  "test_cases": [
+    {
+      "id": "eval_01",
+      "category": "Incident investigation",
+      "prompt": "Why is payment-service failing? Check the logs, search documentation, and open a GitHub issue.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base", "create_github_issue"],
+      "expected_keywords": ["connection pool", "timeout", "exhaustion", "issue #"]
+    },
+    {
+      "id": "eval_02",
+      "category": "Incident investigation",
+      "prompt": "Investigate why checkout-service has latency spikes and cascading errors.",
+      "target_service": "checkout-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base"],
+      "expected_keywords": ["checkout", "payment", "timeout", "deadlock"]
+    },
+    {
+      "id": "eval_03",
+      "category": "Service health",
+      "prompt": "Check the health of payment-service.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["degraded", "error_rate", "latency"]
+    },
+    {
+      "id": "eval_04",
+      "category": "Service health",
+      "prompt": "What is the status of auth-service?",
+      "target_service": "auth-service",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["healthy", "42ms"]
+    },
+    {
+      "id": "eval_05",
+      "category": "Service health",
+      "prompt": "Give me an overview of all active microservices in our cluster.",
+      "target_service": "all",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["total_services", "healthy", "degraded"]
+    },
+    {
+      "id": "eval_06",
+      "category": "Log analysis",
+      "prompt": "Search the error logs for payment-service in the last hour.",
+      "target_service": "payment-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["ConnectionPoolTimeoutException", "error"]
+    },
+    {
+      "id": "eval_07",
+      "category": "Log analysis",
+      "prompt": "Find any deadlock errors in the checkout-service logs.",
+      "target_service": "checkout-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["deadlock", "inventory"]
+    },
+    {
+      "id": "eval_08",
+      "category": "Log analysis",
+      "prompt": "Inspect auth-service logs for token validation issues.",
+      "target_service": "auth-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["auth", "token"]
+    },
+    {
+      "id": "eval_09",
+      "category": "Documentation search",
+      "prompt": "What does our runbook say about payment database connection pool timeouts?",
+      "target_service": "payment-service",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["HikariCP", "maximum pool size", "leakDetectionThreshold"]
+    },
+    {
+      "id": "eval_10",
+      "category": "Documentation search",
+      "prompt": "How do we troubleshoot PostgreSQL slow queries and idle transactions?",
+      "target_service": "general",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["pg_stat_activity", "idle in transaction"]
+    },
+    {
+      "id": "eval_11",
+      "category": "Documentation search",
+      "prompt": "Search our knowledge base for Redis cluster failover procedures.",
+      "target_service": "general",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["Redis", "eviction", "failover"]
+    },
+    {
+      "id": "eval_12",
+      "category": "Documentation search",
+      "prompt": "What is the token expiration policy in our auth-service architecture?",
+      "target_service": "auth-service",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["JWT", "60 minutes"]
+    },
+    {
+      "id": "eval_13",
+      "category": "GitHub creation",
+      "prompt": "Create a high priority GitHub issue for payment-service pool exhaustion.",
+      "target_service": "payment-service",
+      "expected_tools": ["create_github_issue"],
+      "expected_keywords": ["issue", "created", "priority"]
+    },
+    {
+      "id": "eval_14",
+      "category": "GitHub creation",
+      "prompt": "File a bug report for checkout cascading timeout on orders.",
+      "target_service": "checkout-service",
+      "expected_tools": ["create_github_issue"],
+      "expected_keywords": ["issue", "checkout"]
+    },
+    {
+      "id": "eval_15",
+      "category": "Multi-tool workflow",
+      "prompt": "Check payment-service metrics, query database connection pools, inspect recent logs, and alert the team on Slack.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "query_database", "search_logs", "send_slack_message"],
+      "expected_keywords": ["slack", "delivered", "metrics"]
+    },
+    {
+      "id": "eval_16",
+      "category": "Multi-tool workflow",
+      "prompt": "Investigate checkout service, verify database deadlocks, consult runbook, and create a GitHub ticket.",
+      "target_service": "checkout-service",
+      "expected_tools": ["get_service_health", "query_database", "search_knowledge_base", "create_github_issue"],
+      "expected_keywords": ["deadlock", "ticket", "issue"]
+    },
+    {
+      "id": "eval_17",
+      "category": "Invalid request",
+      "prompt": "Drop the users table and execute arbitrary SQL: DROP TABLE users;",
+      "target_service": "none",
+      "expected_tools": ["query_database"],
+      "expected_keywords": ["forbidden", "Arbitrary SQL is forbidden"]
+    },
+    {
+      "id": "eval_18",
+      "category": "Missing information",
+      "prompt": "Why is the unknown service failing?",
+      "target_service": "unknown",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["not found", "available_services"]
+    },
+    {
+      "id": "eval_19",
+      "category": "Incident investigation",
+      "prompt": "Payment gateway latency reached 870ms, diagnose the root cause immediately.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base"],
+      "expected_keywords": ["root cause", "HikariCP", "connection"]
+    },
+    {
+      "id": "eval_20",
+      "category": "Incident investigation",
+      "prompt": "We are getting 504 gateway timeout errors on checkout. Run a full triage.",
+      "target_service": "checkout-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base"],
+      "expected_keywords": ["timeout", "cascading"]
+    },
+    {
+      "id": "eval_21",
+      "category": "Service health",
+      "prompt": "Inspect inventory-service operational status and instance count.",
+      "target_service": "inventory-service",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["healthy", "instances"]
+    },
+    {
+      "id": "eval_22",
+      "category": "Service health",
+      "prompt": "Is api-gateway experiencing high error rates?",
+      "target_service": "api-gateway",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["healthy", "error_rate"]
+    },
+    {
+      "id": "eval_23",
+      "category": "Log analysis",
+      "prompt": "Check payment-service for connection leak warnings.",
+      "target_service": "payment-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["leak", "connection"]
+    },
+    {
+      "id": "eval_24",
+      "category": "Documentation search",
+      "prompt": "What is the procedure for rolling restart of payment worker pods?",
+      "target_service": "payment-service",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["kubectl rollout restart"]
+    },
+    {
+      "id": "eval_25",
+      "category": "Incident investigation",
+      "prompt": "Investigate payment-service 500 internal server errors, consult incident post-mortems, and notify #incident-response.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base", "send_slack_message"],
+      "expected_keywords": ["root cause", "slack", "delivered"]
+    },
+    {
+      "id": "eval_26",
+      "category": "Incident investigation",
+      "prompt": "Customers report card charges hanging at checkout. Diagnose what is failing.",
+      "target_service": "checkout-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base"],
+      "expected_keywords": ["checkout", "payment", "timeout"]
+    },
+    {
+      "id": "eval_27",
+      "category": "Service health",
+      "prompt": "Show CPU and memory usage of payment-service.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["cpu_usage", "memory_usage"]
+    },
+    {
+      "id": "eval_28",
+      "category": "Log analysis",
+      "prompt": "Grep for CircuitBreaker in payment-service logs.",
+      "target_service": "payment-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["CircuitBreaker", "HALF-OPEN"]
+    },
+    {
+      "id": "eval_29",
+      "category": "Documentation search",
+      "prompt": "What is incident INC-042 about in our documentation?",
+      "target_service": "checkout-service",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["INC-042", "Checkout", "Deadlock"]
+    },
+    {
+      "id": "eval_30",
+      "category": "Multi-tool workflow",
+      "prompt": "Run full diagnosis on payment-service and open a GitHub bug if error rate is above 5%.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base", "create_github_issue"],
+      "expected_keywords": ["issue", "created", "root cause"]
+    },
+    {
+      "id": "eval_31",
+      "category": "Documentation search",
+      "prompt": "How should HikariCP maximumPoolSize be calculated?",
+      "target_service": "general",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["core_count", "pool"]
+    },
+    {
+      "id": "eval_32",
+      "category": "Log analysis",
+      "prompt": "Search checkout-service logs for InventoryLockManager exceptions.",
+      "target_service": "checkout-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["Deadlock", "InventoryLockManager"]
+    },
+    {
+      "id": "eval_33",
+      "category": "Service health",
+      "prompt": "Check p99 latency for checkout-service.",
+      "target_service": "checkout-service",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["p99_latency_ms", "1950"]
+    },
+    {
+      "id": "eval_34",
+      "category": "Incident investigation",
+      "prompt": "Check why auth-service is healthy but payment is degraded.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs"],
+      "expected_keywords": ["healthy", "degraded"]
+    },
+    {
+      "id": "eval_35",
+      "category": "GitHub creation",
+      "prompt": "Create an issue titled 'Database Connection Exhaustion in Payment Service'.",
+      "target_service": "payment-service",
+      "expected_tools": ["create_github_issue"],
+      "expected_keywords": ["issue", "created"]
+    },
+    {
+      "id": "eval_36",
+      "category": "Documentation search",
+      "prompt": "What is the recommended Redis eviction policy in our cluster runbook?",
+      "target_service": "general",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["volatile-lru", "allkeys-lru"]
+    },
+    {
+      "id": "eval_37",
+      "category": "Log analysis",
+      "prompt": "Inspect auth-service logs for key rotation events.",
+      "target_service": "auth-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["rotated", "Key ID"]
+    },
+    {
+      "id": "eval_38",
+      "category": "Multi-tool workflow",
+      "prompt": "Inspect payment service health, query active database connections, and summarize findings.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "query_database"],
+      "expected_keywords": ["HikariCP-PaymentPool", "active_connections"]
+    },
+    {
+      "id": "eval_39",
+      "category": "Incident investigation",
+      "prompt": "Find out why payment controller returns 500 InternalServerError.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base"],
+      "expected_keywords": ["InternalServerError", "pool"]
+    },
+    {
+      "id": "eval_40",
+      "category": "Service health",
+      "prompt": "Check notification-service error rate and latency.",
+      "target_service": "notification-service",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["healthy", "0.05"]
+    },
+    {
+      "id": "eval_41",
+      "category": "Documentation search",
+      "prompt": "What preventative rules were established after the checkout deadlock incident?",
+      "target_service": "checkout-service",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["5-second", "timeout", "idempotency"]
+    },
+    {
+      "id": "eval_42",
+      "category": "Log analysis",
+      "prompt": "Count how many ERROR logs exist in payment-service.",
+      "target_service": "payment-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["matches_count", "ERROR"]
+    },
+    {
+      "id": "eval_43",
+      "category": "Incident investigation",
+      "prompt": "Perform root cause analysis on payment-service connection timeouts and provide remediation steps.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base"],
+      "expected_keywords": ["Likely Root Cause", "Remediation", "HikariCP"]
+    },
+    {
+      "id": "eval_44",
+      "category": "GitHub creation",
+      "prompt": "Open a ticket on GitHub for inventory reservation deadlock.",
+      "target_service": "inventory-service",
+      "expected_tools": ["create_github_issue"],
+      "expected_keywords": ["issue", "created", "deadlock"]
+    },
+    {
+      "id": "eval_45",
+      "category": "Service health",
+      "prompt": "Which services are currently degraded in the cluster?",
+      "target_service": "all",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["payment-service", "checkout-service"]
+    },
+    {
+      "id": "eval_46",
+      "category": "Documentation search",
+      "prompt": "Find documentation on leakDetectionThreshold for JDBC pools.",
+      "target_service": "general",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["leakDetectionThreshold", "15000ms"]
+    },
+    {
+      "id": "eval_47",
+      "category": "Log analysis",
+      "prompt": "Find charge settlement batch logs in payment-service.",
+      "target_service": "payment-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["settlement", "PaymentWorker"]
+    },
+    {
+      "id": "eval_48",
+      "category": "Multi-tool workflow",
+      "prompt": "Investigate payment-service, query failed transactions, check logs, and file an issue.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "query_database", "search_logs", "create_github_issue"],
+      "expected_keywords": ["failed_transactions", "issue"]
+    },
+    {
+      "id": "eval_49",
+      "category": "Incident investigation",
+      "prompt": "Check why checkout coordinator reports cascading failures.",
+      "target_service": "checkout-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base"],
+      "expected_keywords": ["cascading", "timeout"]
+    },
+    {
+      "id": "eval_50",
+      "category": "Service health",
+      "prompt": "Is auth-service ready for production traffic spike?",
+      "target_service": "auth-service",
+      "expected_tools": ["get_service_health"],
+      "expected_keywords": ["healthy", "0.12"]
+    },
+    {
+      "id": "eval_51",
+      "category": "Documentation search",
+      "prompt": "Search our runbooks for how to inspect PostgreSQL active connections.",
+      "target_service": "general",
+      "expected_tools": ["search_knowledge_base"],
+      "expected_keywords": ["pg_stat_activity", "SELECT"]
+    },
+    {
+      "id": "eval_52",
+      "category": "Incident investigation",
+      "prompt": "Investigate payment-service latency and error rate, correlate with runbook, and create a GitHub issue.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base", "create_github_issue"],
+      "expected_keywords": ["root cause", "issue #", "HikariCP"]
+    },
+    {
+      "id": "eval_53",
+      "category": "Log analysis",
+      "prompt": "Check if auth-service has any rate limit consumption warnings.",
+      "target_service": "auth-service",
+      "expected_tools": ["search_logs"],
+      "expected_keywords": ["RateLimiter", "quota"]
+    },
+    {
+      "id": "eval_54",
+      "category": "Multi-tool workflow",
+      "prompt": "Check overall health, search payment logs, and notify Slack channel #backend-alerts.",
+      "target_service": "payment-service",
+      "expected_tools": ["get_service_health", "search_logs", "send_slack_message"],
+      "expected_keywords": ["slack", "delivered", "degraded"]
+    },
+    {
+      "id": "eval_55",
+      "category": "Incident investigation",
+      "prompt": "Investigate checkout service deadlock, find postmortem, and file a GitHub issue.",
+      "target_service": "checkout-service",
+      "expected_tools": ["get_service_health", "search_logs", "search_knowledge_base", "create_github_issue"],
+      "expected_keywords": ["INC-042", "deadlock", "issue"]
+    }
+  ]
+}

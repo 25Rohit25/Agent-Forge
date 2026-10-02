@@ -19,10 +19,10 @@ def _generate_local_embedding(text: str, dim: int = EMBEDDING_DIM) -> List[float
     vector = [0.0] * dim
     clean_text = text.lower()
     
-    # Tokenize words and n-grams
-    tokens = re.findall(r"\b\w+\b", clean_text)
-    if not tokens:
-        tokens = [clean_text]
+    STOP_WORDS = {"how", "do", "we", "what", "is", "the", "in", "our", "to", "for", "and", "a", "an", "about", "search", "documentation", "knowledge", "base", "runbook", "runbooks", "troubleshoot", "troubleshooting"}
+    all_tokens = re.findall(r"\b\w+\b", clean_text)
+    meaningful_tokens = [t for t in all_tokens if t not in STOP_WORDS]
+    tokens = meaningful_tokens if meaningful_tokens else all_tokens
 
     # Unigrams, bigrams, and character trigrams
     features = list(tokens)
@@ -36,7 +36,7 @@ def _generate_local_embedding(text: str, dim: int = EMBEDDING_DIM) -> List[float
         idx = h % dim
         sign = 1.0 if (h >> 16) % 2 == 0 else -1.0
         # Weight by length/importance
-        weight = 1.0 + (0.1 * min(len(feature), 10))
+        weight = 2.0 if len(feature) > 4 else 1.0
         vector[idx] += sign * weight
 
     # Normalize vector to unit length (L2 norm)
