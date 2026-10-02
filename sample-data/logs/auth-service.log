@@ -1,0 +1,5 @@
+2026-10-02T19:00:01Z [INFO] [OAuthProvider] Token validated for client_id=mobile_app_ios
+2026-10-02T19:15:22Z [INFO] [SessionManager] Created session for user_id=10928 on node auth-worker-2
+2026-10-02T19:30:11Z [INFO] [RateLimiter] IP 192.168.1.144 rate limit quota 42/100 requests consumed
+2026-10-02T19:45:00Z [INFO] [OAuthProvider] JWT signing keys rotated successfully. Key ID: key_2026_10
+2026-10-02T19:55:00Z [INFO] [HealthCheck] Auth service healthy: 0 errors in the last 60 minutes

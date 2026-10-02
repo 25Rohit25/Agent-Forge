@@ -1,0 +1,13 @@
+2026-10-02T19:02:14Z [INFO] [PaymentWorker-1] Initiating batch charge processing for settlement window 19:00
+2026-10-02T19:15:32Z [INFO] [HttpServer] POST /v1/charges 200 OK (latency: 142ms)
+2026-10-02T19:24:01Z [WARN] [DbConnectionPool] Active connections 48/50. Pool approaching max capacity limit.
+2026-10-02T19:28:19Z [ERROR] [TransactionHandler] ConnectionPoolTimeoutException: Timeout waiting for idle connection in pool [HikariCP-PaymentPool] after 30000ms.
+2026-10-02T19:28:22Z [ERROR] [PaymentController] POST /v1/charges 500 InternalServerError - Database connection unavailable
+2026-10-02T19:28:45Z [ERROR] [TransactionHandler] ConnectionPoolTimeoutException: Unable to acquire connection from pool (active: 50, idle: 0, waiting: 28)
+2026-10-02T19:29:10Z [ERROR] [RefundService] Failed to process customer refund charge_ref_92104: Database transaction timed out
+2026-10-02T19:30:05Z [WARN] [CircuitBreaker] Circuit breaker [PostgresPrimary] state changed to HALF-OPEN (failure_rate: 18.4%)
+2026-10-02T19:31:12Z [ERROR] [PaymentController] POST /v1/charges 504 GatewayTimeout - Downstream DB pool exhausted
+2026-10-02T19:35:40Z [ERROR] [HikariCP-PaymentPool] Connection leak suspected! Connection #104 checked out for 452000ms by thread [ChargeVerificationRoutine-4]
+2026-10-02T19:40:02Z [ERROR] [TransactionHandler] ConnectionPoolTimeoutException: HikariCP pool exhausted. 34 client requests queued.
+2026-10-02T19:48:15Z [WARN] [HealthCheck] Health indicator [DatabaseHealthIndicator] degraded - response time 1850ms
+2026-10-02T19:54:33Z [ERROR] [TransactionHandler] ConnectionPoolTimeoutException: Could not obtain JDBC connection from pool.

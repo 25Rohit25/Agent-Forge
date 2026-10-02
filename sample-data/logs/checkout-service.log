@@ -1,0 +1,6 @@
+2026-10-02T19:10:00Z [INFO] [CheckoutCoordinator] Order placed: cart_id=98321, user_id=4412
+2026-10-02T19:28:25Z [ERROR] [CheckoutCoordinator] Upstream payment processing failed: 500 InternalServerError from http://payment-service:8080/v1/charges
+2026-10-02T19:28:46Z [WARN] [RetryPolicy] Retrying payment charge for order_id=ord_77192 (attempt 2 of 3)
+2026-10-02T19:29:16Z [ERROR] [CheckoutCoordinator] Checkout request aborted: payment service response timed out after 30000ms
+2026-10-02T19:31:15Z [ERROR] [InventoryLockManager] Deadlock detected during inventory reservation rollback for cart_id=98342
+2026-10-02T19:35:20Z [ERROR] [CheckoutCoordinator] Cascading failure detected: 14 checkout requests failed due to payment-service timeout
